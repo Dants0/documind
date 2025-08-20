@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
 import { MainView } from './components/MainView';
 import { ApiKeySetup } from './components/ApyKeySetup';
