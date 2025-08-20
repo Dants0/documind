@@ -1,45 +1,261 @@
-// src/components/ApiKeySetup.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { writeTextFile, readTextFile, BaseDirectory, exists, create } from '@tauri-apps/plugin-fs';
 
 interface ApiKeySetupProps {
   onSubmit: (apiKey: string) => void;
 }
 
-// Componente para a tela de configuração inicial da chave de API.
-// É a primeira tela que o usuário verá.
 export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
   const [inputValue, setInputValue] = useState('');
+  const [savedApiKey, setSavedApiKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      onSubmit(inputValue.trim());
+  const SETTINGS_FILE = 'settings.json';
+
+  // Função para garantir que o diretório e arquivo existam
+  const ensureSettingsFile = async () => {
+    try {
+      // Verifica se o arquivo existe
+      const fileExists = await exists(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
+
+      if (!fileExists) {
+        console.log('Arquivo settings.json não existe, criando...');
+        // Cria o arquivo com configuração inicial
+        await writeTextFile(SETTINGS_FILE, JSON.stringify({}), {
+          baseDir: BaseDirectory.AppConfig
+        });
+        console.log('Arquivo settings.json criado com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro ao garantir settings.json:', error);
+
+      // Tenta criar o diretório se não existir
+      try {
+        console.log('Tentando criar arquivo settings.json...');
+        await create(SETTINGS_FILE, {
+          baseDir: BaseDirectory.AppConfig
+        });
+
+        // Escreve o conteúdo inicial no arquivo
+        await writeTextFile(SETTINGS_FILE, JSON.stringify({}), {
+          baseDir: BaseDirectory.AppConfig
+        });
+        console.log('Arquivo settings.json criado com sucesso');
+      } catch (dirError) {
+        console.error('Erro ao criar arquivo:', dirError);
+      }
     }
   };
 
+  // Carrega a chave salva
+  useEffect(() => {
+    const loadApiKey = async () => {
+      try {
+        await ensureSettingsFile();
+
+        const content = await readTextFile(SETTINGS_FILE, {
+          baseDir: BaseDirectory.AppConfig
+        });
+
+        console.log('Conteúdo lido do arquivo:', content);
+
+        const data = JSON.parse(content);
+        if (data.apiKey && data.apiKey.trim()) {
+          setSavedApiKey(data.apiKey.trim());
+          console.log('Chave de API carregada com sucesso');
+        } else {
+          console.log('Nenhuma chave de API encontrada no arquivo');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar chave de API:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadApiKey();
+  }, []);
+
+  // Auto-submit se já tem chave salva e não está editando
+  useEffect(() => {
+    if (savedApiKey && !isEditing && !isLoading) {
+      console.log('Auto-submit com chave existente');
+      onSubmit(savedApiKey);
+    }
+  }, [savedApiKey, isEditing, isLoading, onSubmit]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const key = inputValue.trim();
+
+    if (!key) {
+      alert('Por favor, insira uma chave de API válida');
+      return;
+    }
+
+    try {
+      console.log('Salvando nova chave de API...');
+
+      const settingsData = { apiKey: key };
+
+      await writeTextFile(
+        SETTINGS_FILE,
+        JSON.stringify(settingsData, null, 2),
+        { baseDir: BaseDirectory.AppConfig }
+      );
+
+      console.log('Chave de API salva com sucesso');
+
+      setSavedApiKey(key);
+      setIsEditing(false);
+      onSubmit(key);
+
+    } catch (error) {
+      alert('Erro ao salvar chave de API:'+ error);
+
+      // Mesmo com erro de salvamento, continua com a chave em memória
+      alert('Aviso: Não foi possível salvar a chave permanentemente, mas você pode continuar.');
+      setSavedApiKey(key);
+      onSubmit(key);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setInputValue(savedApiKey || '');
+  };
+
+  const handleClear = async () => {
+    if (!confirm('Tem certeza que deseja remover a chave de API salva?')) {
+      return;
+    }
+
+    try {
+      await writeTextFile(SETTINGS_FILE, JSON.stringify({}), {
+        baseDir: BaseDirectory.AppConfig
+      });
+
+      setSavedApiKey(null);
+      setInputValue('');
+      setIsEditing(true);
+
+      console.log('Chave de API removida com sucesso');
+
+    } catch (error) {
+      console.error('Erro ao limpar chave de API:', error);
+      alert('Erro ao remover a chave. Tente novamente.');
+    }
+  };
+
+  const maskApiKey = (key: string) => {
+    if (key.length <= 8) return '***...***';
+    return `${key.slice(0, 4)}${'*'.repeat(Math.max(4, key.length - 8))}${key.slice(-4)}`;
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="p-8 bg-gray-800 rounded-xl text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-400">Carregando configurações...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Confirmation screen (when key exists and not editing)
+  if (savedApiKey && !isEditing) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="p-8 bg-gray-800 rounded-xl w-full max-w-md">
+          <h1 className="text-3xl font-bold text-center text-gray-100 mb-2">
+            Bem-vindo de volta!
+          </h1>
+          <p className="text-center text-gray-400 mb-6">
+            Chave de API encontrada:
+          </p>
+
+          <div className="bg-gray-700 p-4 rounded-lg mb-6">
+            <code className="text-green-400 font-mono break-all">
+              {maskApiKey(savedApiKey)}
+            </code>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => onSubmit(savedApiKey)}
+              className="px-4 py-3 bg-blue-600 rounded-lg text-white font-bold hover:bg-blue-700 transition-colors"
+            >
+              Continuar
+            </button>
+
+            <button
+              onClick={handleEdit}
+              className="px-4 py-3 bg-gray-600 rounded-lg text-white hover:bg-gray-700 transition-colors"
+            >
+              Alterar Chave
+            </button>
+
+            <button
+              onClick={handleClear}
+              className="px-4 py-3 bg-red-600 rounded-lg text-white hover:bg-red-700 transition-colors"
+            >
+              Remover Chave
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Form screen (new key or editing)
   return (
-    <div className="flex flex-col items-center justify-center h-screen p-4">
-      <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center mb-2 text-gray-100">Bem-vindo!</h1>
+    <div className="flex items-center justify-center h-screen bg-gray-900">
+      <div className="p-8 bg-gray-800 rounded-xl w-full max-w-md">
+        <h1 className="text-3xl font-bold text-center text-gray-100 mb-2">
+          {savedApiKey ? 'Alterar Chave de API' : 'Bem-vindo!'}
+        </h1>
         <p className="text-center text-gray-400 mb-8">
-          Para começar, por favor, insira sua chave de API.
+          {savedApiKey
+            ? 'Insira uma nova chave de API:'
+            : 'Para começar, insira sua chave de API OpenAI.'
+          }
         </p>
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="password"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="sua-api-key-aqui"
-            className="px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            placeholder="sk-..."
+            className="px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+            autoFocus
           />
-          <button
-            type="submit"
-            className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors duration-200 shadow-md"
-          >
-            Salvar e Continuar
-          </button>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={!inputValue.trim()}
+              className="flex-1 px-4 py-3 bg-blue-600 rounded-lg text-white font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Salvar e Continuar
+            </button>
+
+            {savedApiKey && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-4 py-3 bg-gray-600 rounded-lg text-white hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
-         <p className="text-xs text-gray-500 mt-6 text-center">
+
+        <p className="text-xs text-gray-500 mt-6 text-center">
           Sua chave de API é armazenada localmente e nunca é compartilhada.
         </p>
       </div>

@@ -1,20 +1,25 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "documind",
+  "productName": "DocuMind",
   "version": "0.1.0",
-  "identifier": "com.guidg.documind",
+  "identifier": "com.documind.app",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
   },
   "app": {
     "windows": [
       {
-        "title": "documind",
-        "width": 800,
-        "height": 600
+        "title": "DocuMind - Analisador de Documentos",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "center": true,
+        "minWidth": 800,
+        "minHeight": 600
       }
     ],
     "security": {
@@ -31,5 +36,15 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
+    "allowlist": {
+      "store": {
+        "all": true
+      }
+    }
   }
 }

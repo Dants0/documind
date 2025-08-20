@@ -1,38 +1,80 @@
-// src/App.tsx
-import React from 'react';
-import { ApiKeySetup } from './components/ApyKeySetup';
+import React, { useState, useEffect } from 'react';
+import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
 import { MainView } from './components/MainView';
+import { ApiKeySetup } from './components/ApyKeySetup';
 
+export default function App() {
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showSetup, setShowSetup] = useState(false);
 
-// Este é o componente principal da sua aplicação.
-// Ele decide qual tela mostrar ao usuário. Se a chave de API
-// ainda não foi configurada, mostra a tela de configuração.
-// Caso contrário, mostra a tela principal do aplicativo.
-const App: React.FC = () => {
-  // Estado para armazenar a chave de API.
-  // No futuro, você irá carregar e salvar essa chave de forma segura
-  // usando as funcionalidades do Tauri/Rust.
-  // Por enquanto, vamos simular com um estado simples.
-  const [apiKey, setApiKey] = React.useState<string | null>(null);
+  const SETTINGS_FILE = 'settings.json';
 
-  // Função para "salvar" a chave de API.
-  const handleApiKeySubmit = (key: string) => {
-    console.log('API Key saved:', key); // Log para depuração
-    setApiKey(key);
-    // Aqui você chamaria uma função do Tauri para salvar a chave
-    // de forma persistente e segura no dispositivo do usuário.
+  // Verifica se já existe uma chave de API salva ao iniciar
+  useEffect(() => {
+    const checkExistingApiKey = async () => {
+      try {
+        // Verifica se o arquivo de configuração existe
+        const fileExists = await exists(SETTINGS_FILE, {
+          baseDir: BaseDirectory.AppConfig
+        });
+
+        if (fileExists) {
+          const content = await readTextFile(SETTINGS_FILE, {
+            baseDir: BaseDirectory.AppConfig
+          });
+
+          console.log('Verificando chave existente:', content);
+
+          const data = JSON.parse(content);
+
+          if (data.apiKey && data.apiKey.trim()) {
+            console.log('Chave de API encontrada, entrando direto no MainView');
+            setApiKey(data.apiKey.trim());
+            setShowSetup(false);
+          } else {
+            console.log('Arquivo existe mas não contém chave válida');
+            setShowSetup(true);
+          }
+        } else {
+          console.log('Arquivo de configuração não existe, mostrando setup');
+          setShowSetup(true);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar chave existente:', error);
+        setShowSetup(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkExistingApiKey();
+  }, []);
+
+  // Callback para quando a chave de API for configurada
+  const handleApiKeySubmit = (newApiKey: string) => {
+    console.log('API Key configurada:', newApiKey ? 'Sim' : 'Não');
+    setApiKey(newApiKey);
+    setShowSetup(false);
   };
 
-  return (
-    <div className="bg-gray-900 text-white min-h-screen font-sans">
-      {/* Renderização condicional: se não houver chave, mostra a tela de setup. */}
-      {!apiKey ? (
-        <ApiKeySetup onSubmit={handleApiKeySubmit} />
-      ) : (
-        <MainView />
-      )}
-    </div>
-  );
-};
+  // Loading inicial
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="p-8 bg-gray-800 rounded-xl text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-400">Iniciando aplicação...</p>
+        </div>
+      </div>
+    );
+  }
 
-export default App;
+  // Mostra tela de configuração se necessário
+  if (showSetup || !apiKey) {
+    return <ApiKeySetup onSubmit={handleApiKeySubmit} />;
+  }
+
+  // Mostra a tela principal com a chave de API
+  return <MainView initialApiKey={apiKey} />;
+};

@@ -6,6 +6,7 @@ export interface Summary {
   title: string;
   date: string;
   preview: string;
+  analyse: string;
 }
 
 interface SummaryListProps {
@@ -24,7 +25,8 @@ export const SummaryList: React.FC<SummaryListProps> = ({ summaries }) => {
           >
             <h3 className="font-bold text-lg truncate">{summary.title}</h3>
             <p className="text-sm text-gray-400">{summary.date}</p>
-            <p className="text-gray-300 mt-2 text-sm truncate">{summary.preview}</p>
+            <p className="text-gray-300 mt-2 text-sm">{summary.preview}</p>
+            <p className="text-gray-300 mt-2 text-sm ">{summary.analyse}</p>
           </div>
         ))
       ) : (
