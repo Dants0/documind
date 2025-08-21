@@ -2,7 +2,8 @@ use tauri::Emitter;
 
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_fs::init()) // Plugin FS necessário para armazenamento
+        .plugin(tauri_plugin_fs::init()) // Já estava correto
+        .plugin(tauri_plugin_store::Builder::default().build()) // <-- Novo: Plugin para armazenamento de dados
         .setup(|app| {
             #[cfg(desktop)]
             {

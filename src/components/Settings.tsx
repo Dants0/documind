@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { writeTextFile, readTextFile, BaseDirectory, exists, mkdir } from '@tauri-apps/plugin-fs';
+import { open } from '@tauri-apps/plugin-shell';
+
 
 interface SettingsProps {
   apiKey: string | null;
@@ -92,6 +94,12 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
     setIsEditing(true);
     setInputValue(apiKey || '');
   };
+
+  const handleOpenLink = (url: string) => {
+    open(url);
+  };
+
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -262,7 +270,9 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
           <svg className="w-6 h-6 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 110 19.5 9.75 9.75 0 010-19.5z" />
           </svg>
-          <h3 className="text-xl font-semibold text-white">Suporte & Ajuda</h3>
+          <a href="https://github.com/dants0/documind" onClick={() => handleOpenLink('https://github.com/dants0/documind')}>
+            <h3 className="text-xl font-semibold text-white">Suporte & Ajuda</h3>
+          </a>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

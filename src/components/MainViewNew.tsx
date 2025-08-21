@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
-import { Summary, SummaryList } from './Summary';
-import { Navigation, TabType } from './Navigation';
+import { SummaryList } from './Summary';
+import { Navigation } from './Navigation';
 import { Settings } from './Settings';
 import { Insights } from './Insights';
-import { FileUpload, loadSummariesFromFile } from './FileUploadNew'
+import { deleteSummaryFromFile, downloadSummaryAsFile, FileUpload, loadSummariesFromFile } from './FileUploadNew'
+import { Summary } from '../interfaces/Summary';
+import { TabType } from '../interfaces/Navigation';
+import { MainViewProps } from '../interfaces/MainView';
 
-interface MainViewProps {
-  initialApiKey?: string;
-}
+
 
 export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
   const SETTINGS_FILE = 'settings.json';
@@ -50,6 +51,19 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
 
     loadData();
   }, [initialApiKey]);
+
+  const handleDeleteSummary = async (id: number) => {
+    try {
+      await deleteSummaryFromFile(id);
+      setSummaries(prev => prev.filter(summary => summary.id !== id));
+    } catch (error) {
+      console.error('Falha ao deletar resumo:', error);
+    }
+  };
+
+  const handleDownloadSummary = async (summary: Summary) => {
+    await downloadSummaryAsFile(summary);
+  };
 
   // Função para adicionar um novo resumo à lista
   const handleAddSummary = (newSummary: Omit<Summary, 'id' | 'date'>) => {
@@ -168,7 +182,8 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
               <p className="text-gray-400">Visualize e gerencie todos os documentos processados</p>
             </div>
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
-              <SummaryList summaries={summaries} />
+              <SummaryList summaries={summaries} onDelete={handleDeleteSummary}
+                onDownload={handleDownloadSummary} />
             </div>
           </div>
         );

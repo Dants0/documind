@@ -1,9 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Summary } from './Summary';
 import * as pdfjsLib from 'pdfjs-dist';
-import { writeTextFile, readTextFile, exists, BaseDirectory } from '@tauri-apps/plugin-fs';
+import { writeTextFile, readTextFile, exists, BaseDirectory, mkdir } from '@tauri-apps/plugin-fs';
 import { appDataDir, join } from '@tauri-apps/api/path';
+import { Summary } from '../interfaces/Summary';
+import { FileUploadProps } from '../interfaces/FileUpload';
+
 
 // Configurar o worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
@@ -15,10 +17,6 @@ const UploadIcon = () => (
   </svg>
 );
 
-interface FileUploadProps {
-  onAnalysisComplete: (newSummary: Omit<Summary, 'id' | 'date'>) => void;
-  apiKey: string;
-}
 
 // Constante para o nome do arquivo de dados
 const SUMMARIES_FILE_NAME = 'document_analysis_summaries.json';
@@ -70,6 +68,50 @@ export const addSummaryToFile = async (newSummary: Summary): Promise<Summary[]> 
   } catch (error) {
     console.error('Erro ao adicionar análise ao arquivo:', error);
     throw error;
+  }
+};
+
+// Nova função para deletar um resumo
+export const deleteSummaryFromFile = async (id: number): Promise<Summary[]> => {
+  try {
+    const existingSummaries = await loadSummariesFromFile();
+    const updatedSummaries = existingSummaries.filter(summary => summary.id !== id);
+    await saveSummariesToFile(updatedSummaries);
+    console.log(`Resumo com ID ${id} excluído com sucesso.`);
+    return updatedSummaries;
+  } catch (error) {
+    console.error('Erro ao excluir análise do arquivo:', error);
+    throw error;
+  }
+};
+
+export const downloadSummaryAsFile = async (summary: Summary): Promise<void> => {
+  try {
+    const appDataPath = await appDataDir();
+    const appFolderName = 'DocuMind';
+    const appFolderPath = await join(appDataPath, appFolderName);
+
+    try {
+      await mkdir(appFolderPath);
+    } catch (error) {
+      console.log('A pasta DocuMind já existe.');
+    }
+
+    const cleanTitle = summary.title.replace(/[\\/:*?"<>|]/g, '');
+    const fileName = `${cleanTitle.replace(/\.\w+$/, '')}_analise.txt`;
+    const filePath = await join(appFolderPath, fileName);
+
+    const content = `# Análise do Documento: ${summary.title}\n\n` +
+      `**Data da Análise:** ${summary.date}\n\n` +
+      `## Resumo\n\n${summary.preview}\n\n` +
+      `## Análise Detalhada\n\n${summary.analyse}`;
+
+    await writeTextFile(filePath, content);
+    alert(`Análise baixada com sucesso`);
+
+
+  } catch (error) {
+    console.error('Erro ao baixar o resumo:', error);
   }
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Summary } from './Summary';
+import { Summary } from '../interfaces/Summary';
 
 interface InsightsProps {
   summaries: Summary[];

@@ -1,12 +1,5 @@
 import React from 'react';
-
-export type TabType = 'upload' | 'analyzed' | 'insights' | 'settings';
-
-interface NavigationProps {
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
-  hasApiKey: boolean;
-}
+import { NavigationProps, TabType } from '../interfaces/Navigation';
 
 export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, hasApiKey }) => {
   const tabs = [
@@ -56,8 +49,22 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, 
           {/* Logo/Title */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M17 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2z"
+                  opacity="0.5"
+                />
+                <path
+                  d="M17 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2zM9 13h6"
+                />
+                <path
+                  d="M10.5 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM14 14l-2.7-2.7"
+                  stroke="white"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <h1 className="text-xl font-bold text-white hidden sm:block">
