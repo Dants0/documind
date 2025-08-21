@@ -11,30 +11,26 @@ export interface Summary {
 
 interface SummaryListProps {
   summaries: Summary[];
+  onSummaryClick?: (summary: Summary) => void;
 }
 
-// O componente agora é "burro", apenas recebe a lista de resumos e a exibe.
-export const SummaryList: React.FC<SummaryListProps> = ({ summaries }) => {
-  return (
-    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-      {summaries.length > 0 ? (
-        summaries.map(summary => (
-          <div
-            key={summary.id}
-            className="bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200"
-          >
-            <h3 className="font-bold text-lg truncate">{summary.title}</h3>
-            <p className="text-sm text-gray-400">{summary.date}</p>
-            <p className="text-gray-300 mt-2 text-sm">{summary.preview}</p>
-            <p className="text-gray-300 mt-2 text-sm ">{summary.analyse}</p>
-          </div>
-        ))
-      ) : (
-        <div className="text-center py-10">
-          <p className="text-gray-500">Nenhum resumo gerado ainda.</p>
-          <p className="text-gray-500 text-sm">Faça o upload de um documento para começar.</p>
-        </div>
-      )}
-    </div>
-  );
-};
+export const SummaryList: React.FC<SummaryListProps> = ({ summaries, onSummaryClick }) => (
+  <div className="space-y-4">
+    {summaries.map(summary => (
+      <div
+        key={summary.id}
+        className="bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition"
+        onClick={() => onSummaryClick && onSummaryClick(summary)}
+        tabIndex={0}
+        role="button"
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') onSummaryClick && onSummaryClick(summary);
+        }}
+      >
+        <h3 className="font-semibold text-lg mb-1">{summary.title}</h3>
+        <p className="text-gray-400 text-sm mb-2">{summary.date}</p>
+        <p className="text-gray-300 truncate">{summary.preview}</p>
+      </div>
+    ))}
+  </div>
+);

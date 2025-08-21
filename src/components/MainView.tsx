@@ -5,6 +5,7 @@ import { Summary, SummaryList } from './Summary';
 import { Navigation, TabType } from './Navigation';
 import { Settings } from './Settings';
 import { Insights } from './Insights';
+import { Modal } from './Modal';
 
 // Dados de exemplo para a lista de resumos
 const initialSummaries: Summary[] = [
@@ -34,6 +35,8 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
   const [apiKey, setApiKey] = useState<string | null>(initialApiKey || null);
   const [isLoading, setIsLoading] = useState(!initialApiKey);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalSummary, setModalSummary] = useState<Summary | null>(null);
 
   // Carrega a apiKey do settings.json se não foi fornecida via props
   useEffect(() => {
@@ -77,6 +80,11 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
     loadApiKey();
   }, [initialApiKey]);
 
+   const handleSummaryClick = (summary: Summary) => {
+    setModalSummary(summary);
+    setModalOpen(true);
+  };
+
   // Função para adicionar um novo resumo à lista
   const handleAddSummary = (newSummary: Omit<Summary, 'id' | 'date'>) => {
     const summaryWithIdAndDate: Summary = {
@@ -119,6 +127,7 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
                 <FileUpload
                   onAnalysisComplete={handleAddSummary}
                   apiKey={apiKey}
+                  goToAnalyzedTab={() => setActiveTab('analyzed')}
                 />
               ) : (
                 <div className="text-center p-12">
@@ -206,7 +215,7 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
             </div>
 
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
-              <SummaryList summaries={summaries} />
+              <SummaryList summaries={summaries} onSummaryClick={handleSummaryClick} />
             </div>
           </div>
         );
@@ -233,6 +242,12 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
       <div className="container mx-auto p-6 md:p-8 pb-12">
         {renderTabContent()}
       </div>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalSummary?.title || ''}
+        content={modalSummary ? `${modalSummary.analyse}` : ''}
+      />
 
       {/* Footer */}
       <footer className="border-t border-gray-800 bg-gray-900/50 backdrop-blur-sm">
