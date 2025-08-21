@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { writeTextFile, readTextFile, BaseDirectory, exists, mkdir } from '@tauri-apps/plugin-fs';
+import { writeTextFile, BaseDirectory, exists, mkdir } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-shell';
 
 
