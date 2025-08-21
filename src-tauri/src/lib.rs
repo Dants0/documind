@@ -28,7 +28,6 @@ pub fn run() {
                 )?;
             }
 
-            println!("Aplicação Tauri iniciada com sucesso!");
             Ok(())
         })
         .run(tauri::generate_context!())
