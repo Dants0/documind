@@ -4,10 +4,11 @@ import { SummaryList } from './Summary';
 import { Navigation } from './Navigation';
 import { Settings } from './Settings';
 import { Insights } from './Insights';
-import { deleteSummaryFromFile, downloadSummaryAsFile, FileUpload, loadSummariesFromFile } from './FileUploadNew'
-import { Summary } from '../interfaces/Summary';
-import { TabType } from '../interfaces/Navigation';
+import { Modal } from './Modal';
 import { MainViewProps } from '../interfaces/MainView';
+import { TabType } from '../interfaces/Navigation';
+import { Summary } from '../interfaces/Summary';
+import { loadSummariesFromFile, FileUpload } from './FileUploadNew';
 
 
 
@@ -18,6 +19,8 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
   const [apiKey, setApiKey] = useState<string | null>(initialApiKey || null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalSummary, setModalSummary] = useState<Summary | null>(null);
 
   // Carrega a apiKey e os summaries do disco
   useEffect(() => {
@@ -52,17 +55,9 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
     loadData();
   }, [initialApiKey]);
 
-  const handleDeleteSummary = async (id: number) => {
-    try {
-      await deleteSummaryFromFile(id);
-      setSummaries(prev => prev.filter(summary => summary.id !== id));
-    } catch (error) {
-      console.error('Falha ao deletar resumo:', error);
-    }
-  };
-
-  const handleDownloadSummary = async (summary: Summary) => {
-    await downloadSummaryAsFile(summary);
+  const handleSummaryClick = (summary: Summary) => {
+    setModalSummary(summary);
+    setModalOpen(true);
   };
 
   // Função para adicionar um novo resumo à lista
@@ -104,7 +99,11 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
             </div>
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
               {apiKey ? (
-                <FileUpload onAnalysisComplete={handleAddSummary} apiKey={apiKey} />
+                <FileUpload
+                  onAnalysisComplete={handleAddSummary}
+                  apiKey={apiKey}
+                  goToAnalyzedTab={() => setActiveTab('analyzed')}
+                />
               ) : (
                 <div className="text-center p-12">
                   <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -182,8 +181,7 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
               <p className="text-gray-400">Visualize e gerencie todos os documentos processados</p>
             </div>
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
-              <SummaryList summaries={summaries} onDelete={handleDeleteSummary}
-                onDownload={handleDownloadSummary} />
+              <SummaryList summaries={summaries} onSummaryClick={handleSummaryClick} />
             </div>
           </div>
         );
@@ -206,6 +204,14 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
       <div className="container mx-auto p-6 md:p-8 pb-12">
         {renderTabContent()}
       </div>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalSummary?.title || ''}
+        content={modalSummary ? `${modalSummary.analyse}` : ''}
+      />
+
+      {/* Footer */}
       <footer className="border-t border-gray-800 bg-gray-900/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">

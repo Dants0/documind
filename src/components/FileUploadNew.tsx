@@ -1,11 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
-import { writeTextFile, readTextFile, exists, BaseDirectory, mkdir } from '@tauri-apps/plugin-fs';
+import { toast } from 'react-hot-toast';
 import { appDataDir, join } from '@tauri-apps/api/path';
+import { writeTextFile, BaseDirectory, exists, readTextFile, mkdir } from '@tauri-apps/plugin-fs';
 import { Summary } from '../interfaces/Summary';
-import { FileUploadProps } from '../interfaces/FileUpload';
-
 
 // Configurar o worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
@@ -17,6 +16,12 @@ const UploadIcon = () => (
   </svg>
 );
 
+
+interface FileUploadProps {
+  onAnalysisComplete: (newSummary: Omit<Summary, 'id' | 'date'>) => void;
+  apiKey: string;
+  goToAnalyzedTab: () => void;
+}
 
 // Constante para o nome do arquivo de dados
 const SUMMARIES_FILE_NAME = 'document_analysis_summaries.json';
@@ -207,7 +212,7 @@ const analyzeWithOpenAI = async (text: string, fileName: string, apiKey: string)
         },
         {
           role: 'user',
-          content: `Analise o seguinte documento "${fileName}":\n\n${truncatedText}\n\nForneça sua resposta no seguinte formato JSON:\n{\n  "preview": "resumo breve de 2-3 linhas",\n  "analyse": "análise detalhada do documento"\n}`
+          content: `Analise o seguinte documento "${fileName}":\n\n${truncatedText}\n\nResponda SEMPRE em texto direto, nunca em JSON. Forneça um resumo breve (máx. 2 linhas) e uma análise detalhada, ambos em texto corrido, claros, objetivos e sucintos. Use Markdown para destacar títulos e tópicos, se necessário.`
         }
       ],
       max_tokens: 2000,
@@ -227,22 +232,13 @@ const analyzeWithOpenAI = async (text: string, fileName: string, apiKey: string)
     throw new Error('Resposta vazia da OpenAI');
   }
 
-  try {
-    const parsed = JSON.parse(content);
-    return {
-      preview: parsed.preview || 'Resumo não disponível',
-      analyse: parsed.analyse || 'Análise não disponível'
-    };
-  } catch {
-    return {
-      preview: 'Análise gerada por IA',
-      analyse: content
-    };
-  }
+  return {
+    preview: '',
+    analyse: content
+  };
 };
 
-
-export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiKey }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiKey, goToAnalyzedTab }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -306,28 +302,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
         analyse: analyse
       };
 
-      // Salva no arquivo usando Tauri
-      await addSummaryToFile(newSummary);
+     onAnalysisComplete(newSummary);
+  setFile(null);
 
-      console.log('Análise salva com sucesso!');
+  toast.success('Arquivo analisado com sucesso!');
+  goToAnalyzedTab(); // Troca para a aba de arquivos analisados
 
-      // Chama o callback passando apenas os dados necessários
-      onAnalysisComplete({
-        title: newSummary.title,
-        preview: newSummary.preview,
-        analyse: newSummary.analyse
-      });
-
-      setFile(null);
-
-    } catch (err) {
-      console.error('Erro na análise:', err);
-      setError(err instanceof Error ? err.message : 'Erro desconhecido na análise');
-    } finally {
-      setIsProcessing(false);
-      setProcessingStep(null);
-      setProgress(null);
-    }
+} catch (err) {
+  console.error('Erro na análise:', err);
+  setError(err instanceof Error ? err.message : 'Erro desconhecido na análise');
+  toast.error('Erro ao analisar o arquivo!');
+} finally {
+  setIsProcessing(false);
+  setProcessingStep(null);
+  setProgress(null);
+}
   };
 
   const getProcessingText = () => {
@@ -398,6 +387,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
           ⚠️ Chave de API não configurada. Configure sua chave OpenAI para usar a análise.
         </p>
       )}
+      
     </div>
   );
 };

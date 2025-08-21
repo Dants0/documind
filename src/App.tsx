@@ -3,6 +3,7 @@ import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
 import { MainView } from './components/MainViewNew';
 import { ApiKeySetup } from './components/ApyKeySetup';
 import { useShortcuts } from './hooks/useShortCuts';
+import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   useShortcuts();
@@ -64,12 +65,16 @@ export default function App() {
   // Loading inicial
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="p-8 bg-gray-800 rounded-xl text-center">
-          <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-400">Iniciando aplicação...</p>
+      <>
+      <Toaster position="top-right" />
+        <div className="flex items-center justify-center h-screen bg-gray-900">
+          <div className="p-8 bg-gray-800 rounded-xl text-center">
+            <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-400">Iniciando aplicação...</p>
+          </div>
         </div>
-      </div>
+        
+      </>
     );
   }
 
