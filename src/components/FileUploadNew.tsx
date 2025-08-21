@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast';
 import { appDataDir, join } from '@tauri-apps/api/path';
 import { writeTextFile, BaseDirectory, exists, readTextFile, mkdir } from '@tauri-apps/plugin-fs';
 import { Summary } from '../interfaces/Summary';
+// import { jsPDF } from 'jspdf';
+
 
 // Configurar o worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
@@ -302,21 +304,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
         analyse: analyse
       };
 
-     onAnalysisComplete(newSummary);
-  setFile(null);
+      onAnalysisComplete(newSummary);
+      setFile(null);
 
-  toast.success('Arquivo analisado com sucesso!');
-  goToAnalyzedTab(); // Troca para a aba de arquivos analisados
+      toast.success('Arquivo analisado com sucesso!');
+      goToAnalyzedTab(); // Troca para a aba de arquivos analisados
 
-} catch (err) {
-  console.error('Erro na análise:', err);
-  setError(err instanceof Error ? err.message : 'Erro desconhecido na análise');
-  toast.error('Erro ao analisar o arquivo!');
-} finally {
-  setIsProcessing(false);
-  setProcessingStep(null);
-  setProgress(null);
-}
+    } catch (err) {
+      console.error('Erro na análise:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido na análise');
+      toast.error('Erro ao analisar o arquivo!');
+    } finally {
+      setIsProcessing(false);
+      setProcessingStep(null);
+      setProgress(null);
+    }
   };
 
   const getProcessingText = () => {
@@ -387,7 +389,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
           ⚠️ Chave de API não configurada. Configure sua chave OpenAI para usar a análise.
         </p>
       )}
-      
+
     </div>
   );
 };

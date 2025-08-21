@@ -87,6 +87,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content })
       }
     });
 
+    alert("O resumo se encontra em Downloads!")
     doc.save(`${title.replace(/\.[^/.]+$/, "")}-resumo.pdf`);
   };
 

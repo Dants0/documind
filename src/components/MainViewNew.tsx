@@ -8,7 +8,7 @@ import { Modal } from './Modal';
 import { MainViewProps } from '../interfaces/MainView';
 import { TabType } from '../interfaces/Navigation';
 import { Summary } from '../interfaces/Summary';
-import { loadSummariesFromFile, FileUpload } from './FileUploadNew';
+import { loadSummariesFromFile, FileUpload, deleteSummaryFromFile } from './FileUploadNew';
 
 
 
@@ -181,7 +181,7 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
               <p className="text-gray-400">Visualize e gerencie todos os documentos processados</p>
             </div>
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
-              <SummaryList summaries={summaries} onSummaryClick={handleSummaryClick} />
+              <SummaryList summaries={summaries} onSummaryClick={handleSummaryClick} onDelete={deleteSummaryFromFile} />
             </div>
           </div>
         );
