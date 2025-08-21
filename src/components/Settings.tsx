@@ -222,7 +222,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-700">
               <span className="text-gray-400">Nome:</span>
-              <span className="text-white font-medium">DocuMind</span>
+              <span className="text-white font-medium">IntelliDocs</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-700">
               <span className="text-gray-400">Versão:</span>
@@ -230,7 +230,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-700">
               <span className="text-gray-400">Tecnologia:</span>
-              <span className="text-white font-medium">Tauri + React</span>
+              <span className="text-white font-medium">Tauri + React + Rust</span>
             </div>
           </div>
 
@@ -252,7 +252,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
 
         <div className="mt-6 p-4 bg-gray-700 rounded-lg">
           <p className="text-gray-300 text-sm">
-            DocuMind é uma ferramenta de análise de documentos que utiliza inteligência artificial
+            IntelliDocs é uma ferramenta de análise de documentos que utiliza inteligência artificial
             para gerar resumos e insights de seus arquivos. Todos os dados são processados e
             armazenados localmente em seu dispositivo, garantindo privacidade e segurança.
           </p>
@@ -265,7 +265,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
           <svg className="w-6 h-6 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 110 19.5 9.75 9.75 0 010-19.5z" />
           </svg>
-          <a href="https://github.com/dants0/documind" onClick={() => handleOpenLink('https://github.com/dants0/documind')}>
+          <a href="https://intellidocs1.vercel.app" onClick={() => handleOpenLink('https://intellidocs1.vercel.app')}>
             <h3 className="text-xl font-semibold text-white">Suporte & Ajuda</h3>
           </a>
         </div>

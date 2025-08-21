@@ -1,10 +1,10 @@
-# DocuMind
+# IntelliDocs
 
 Uma aplicação desktop inteligente para análise de documentos usando IA, construída com Tauri, React e TypeScript.
 
 ## Sobre o Projeto
 
-DocuMind é uma ferramenta poderosa que permite fazer upload de documentos e obter análises inteligentes geradas por IA. A aplicação processa diferentes tipos de arquivos e fornece resumos detalhados, insights e estatísticas, tudo armazenado localmente para garantir sua privacidade.
+IntelliDocs é uma ferramenta poderosa que permite fazer upload de documentos e obter análises inteligentes geradas por IA. A aplicação processa diferentes tipos de arquivos e fornece resumos detalhados, insights e estatísticas, tudo armazenado localmente para garantir sua privacidade.
 
 ## Funcionalidades
 

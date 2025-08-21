@@ -86,13 +86,13 @@ export const deleteSummaryFromFile = async (id: number): Promise<Summary[]> => {
 export const downloadSummaryAsFile = async (summary: Summary): Promise<void> => {
   try {
     const appDataPath = await appDataDir();
-    const appFolderName = 'DocuMind';
+    const appFolderName = 'IntelliDocs';
     const appFolderPath = await join(appDataPath, appFolderName);
 
     try {
       await mkdir(appFolderPath);
     } catch (error) {
-      console.log('A pasta DocuMind já existe.');
+      console.log('A pasta IntelliDocs já existe.');
     }
 
     const cleanTitle = summary.title.replace(/[\\/:*?"<>|]/g, '');

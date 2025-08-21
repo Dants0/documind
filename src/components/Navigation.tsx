@@ -68,7 +68,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, 
               </svg>
             </div>
             <h1 className="text-xl font-bold text-white hidden sm:block">
-              DocuMind
+              IntelliDocs
             </h1>
           </div>
 

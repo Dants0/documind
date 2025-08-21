@@ -196,13 +196,6 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
             leaveTo="opacity-0 scale-95"
           >
             <Dialog.Panel className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] p-8 flex flex-col">
-              <button
-                className="absolute top-5 right-6 text-gray-400 hover:text-white text-2xl"
-                onClick={onClose}
-                aria-label="Fechar"
-              >
-                &times;
-              </button>
               <Dialog.Title className="text-2xl text-gray-200 font-bold mb-4">{title}</Dialog.Title>
               <div className="flex justify-between mb-4">
                 <button
