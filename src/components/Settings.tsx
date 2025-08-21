@@ -231,7 +231,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-700">
               <span className="text-gray-400">Versão:</span>
-              <span className="text-white font-medium">1.1.0</span>
+              <span className="text-white font-medium">2.0.0</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-700">
               <span className="text-gray-400">Tecnologia:</span>
