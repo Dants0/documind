@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { writeTextFile, BaseDirectory, exists, mkdir } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-shell';
+import { SettingsProps } from '../interfaces/Settings';
 
 
-interface SettingsProps {
-  apiKey: string | null;
-  onApiKeyUpdate: (apiKey: string | null) => void;
-}
 
 export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) => {
   const [inputValue, setInputValue] = useState('');
@@ -231,7 +228,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-700">
               <span className="text-gray-400">Versão:</span>
-              <span className="text-white font-medium">2.1.0</span>
+              <span className="text-white font-medium">2.1.1</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-700">
               <span className="text-gray-400">Tecnologia:</span>

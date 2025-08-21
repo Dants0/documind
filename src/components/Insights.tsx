@@ -1,9 +1,6 @@
 import React from 'react';
-import { Summary } from '../interfaces/Summary';
+import { InsightsProps } from '../interfaces/Insights';
 
-interface InsightsProps {
-  summaries: Summary[];
-}
 
 export const Insights: React.FC<InsightsProps> = ({ summaries }) => {
   // Calcular estatísticas

@@ -3,9 +3,10 @@ import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
 import { toast } from 'react-hot-toast';
 import { appDataDir, join } from '@tauri-apps/api/path';
-import { writeTextFile, BaseDirectory, exists, readTextFile, mkdir } from '@tauri-apps/plugin-fs';
+import { writeTextFile, exists, readTextFile, mkdir } from '@tauri-apps/plugin-fs';
 import { Summary } from '../interfaces/Summary';
-// import { jsPDF } from 'jspdf';
+import { FileUploadProps } from '../interfaces/FileUpload';
+import { analyzeWithOpenAI } from '../hooks/analyzeWithOpenAi';
 
 
 // Configurar o worker do PDF.js
@@ -18,12 +19,6 @@ const UploadIcon = () => (
   </svg>
 );
 
-
-interface FileUploadProps {
-  onAnalysisComplete: (newSummary: Omit<Summary, 'id' | 'date'>) => void;
-  apiKey: string;
-  goToAnalyzedTab: () => void;
-}
 
 // Constante para o nome do arquivo de dados
 const SUMMARIES_FILE_NAME = 'document_analysis_summaries.json';
@@ -38,7 +33,7 @@ export const saveSummariesToFile = async (summaries: Summary[]): Promise<void> =
   try {
     const filePath = await getSummariesFilePath();
     const jsonData = JSON.stringify(summaries, null, 2);
-    await writeTextFile(filePath, jsonData, { baseDir: BaseDirectory.AppConfig });
+    await writeTextFile(filePath, jsonData);
     console.log('Análises salvas no arquivo:', filePath);
   } catch (error) {
     console.error('Erro ao salvar análises no arquivo:', error);
@@ -83,6 +78,7 @@ export const deleteSummaryFromFile = async (id: number): Promise<Summary[]> => {
   try {
     const existingSummaries = await loadSummariesFromFile();
     const updatedSummaries = existingSummaries.filter(summary => summary.id !== id);
+    console.log(updatedSummaries)
     await saveSummariesToFile(updatedSummaries);
     console.log(`Resumo com ID ${id} excluído com sucesso.`);
     return updatedSummaries;
@@ -194,51 +190,6 @@ const extractTextFromFile = async (file: File): Promise<string> => {
   }
 }
 
-const analyzeWithOpenAI = async (text: string, fileName: string, apiKey: string): Promise<{ preview: string; analyse: string }> => {
-  // Limita o texto se for muito longo (OpenAI tem limites de tokens)
-  const maxLength = 10000; // aproximadamente 3000 tokens
-  const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '\n\n[Texto truncado devido ao tamanho...]' : text;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'Você é um assistente especializado em análise de documentos. Você deve fornecer duas coisas: 1) Um resumo breve (preview) de 2-3 linhas, 2) Uma análise detalhada do documento cobrindo os pontos principais, insights e conclusões.'
-        },
-        {
-          role: 'user',
-          content: `Analise o seguinte documento "${fileName}":\n\n${truncatedText}\n\nResponda SEMPRE em texto direto, nunca em JSON. Forneça um resumo breve (máx. 2 linhas) e uma análise detalhada, ambos em texto corrido, claros, objetivos e sucintos. Use Markdown para destacar títulos e tópicos, se necessário.`
-        }
-      ],
-      max_tokens: 2000,
-      temperature: 0.7,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`Erro na API OpenAI: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error('Resposta vazia da OpenAI');
-  }
-
-  return {
-    preview: '',
-    analyse: content
-  };
-};
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiKey, goToAnalyzedTab }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -303,6 +254,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
         preview: preview,
         analyse: analyse
       };
+
+      await addSummaryToFile(newSummary);
 
       onAnalysisComplete(newSummary);
       setFile(null);

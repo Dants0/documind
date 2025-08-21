@@ -2,20 +2,12 @@ import { Dialog, Transition } from '@headlessui/react';
 import React, { Fragment, useRef, useEffect, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import ReactMarkdown from 'react-markdown';
+import { ModalProps } from '../interfaces/Modal';
+import { splitTextInSentences } from '../utils/splitText';
+import { explainSetenceWithOpenAi } from '../hooks/explainSetenceWithOpenAi';
 
-// Utilitário para dividir texto em frases
-function splitTextInSentences(text: string) {
-  return text.match(/[^.!?]+[.!?]+[\])'"`’”]*|.+/g) || [];
-}
 
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  content: string;
-}
-
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, onDelete, id, apiKey }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const explanationRef = useRef<HTMLDivElement>(null);
 
@@ -98,13 +90,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content })
     setSelectedSentence(sentence);
 
     // Aqui você pode integrar com sua API/IA real
-    // Exemplo mock:
-    setTimeout(() => {
-      setExplanation(
-        `Explicação simplificada para: "${sentence.trim()}"\n\nExemplo prático: Imagine que este conceito está sendo aplicado em uma situação real, facilitando o entendimento do contexto.`
-      );
-      setLoadingExplanation(false);
-    }, 1200);
+    const explanationAi: any = await explainSetenceWithOpenAi(sentence, apiKey)
+    setExplanation(explanationAi.explain)
+    setLoadingExplanation(false);
   };
 
   // Customização do ReactMarkdown para frases clicáveis mantendo o negrito
@@ -167,16 +155,15 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content })
               {elements.map((fragment, idx) => (
                 <span
                   key={idx}
-                  className={`cursor-pointer hover:bg-blue-900/30 transition rounded px-1 ${
-                    selectedSentence ===
+                  className={`cursor-pointer hover:bg-blue-900/30 transition rounded px-1 ${selectedSentence ===
                     (Array.isArray(fragment)
                       ? fragment.map(f => (typeof f === 'string' ? f : f.props.children)).join('')
                       : typeof fragment === 'string'
                         ? fragment
                         : '')
-                      ? 'bg-blue-900/50 font-bold'
-                      : ''
-                  }`}
+                    ? 'bg-blue-900/50 font-bold'
+                    : ''
+                    }`}
                   onClick={() => {
                     const sentenceText = Array.isArray(fragment)
                       ? fragment.map(f => (typeof f === 'string' ? f : f.props.children)).join('')
@@ -232,12 +219,21 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content })
                 &times;
               </button>
               <Dialog.Title className="text-2xl text-gray-200 font-bold mb-4">{title}</Dialog.Title>
-              <div className="flex gap-2 mb-4">
+              <div className="flex justify-between mb-4">
                 <button
                   onClick={handleExportPdf}
                   className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                 >
                   Exportar PDF
+                </button>
+                <button
+                  onClick={() => onDelete(id)}
+                  className="p-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"
+                  title="Excluir Análise"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
                 </button>
               </div>
               <div

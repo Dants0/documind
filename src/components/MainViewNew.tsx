@@ -55,6 +55,16 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
     loadData();
   }, [initialApiKey]);
 
+  const handleDeleteSummary = async (id: number) => {
+    try {
+      const updatedSummaries = await deleteSummaryFromFile(id);
+      setSummaries(updatedSummaries); // Atualiza a lista exibida em tela
+      setModalOpen(false); // Fecha modal depois de deletar
+    } catch (error) {
+      console.error("Erro ao deletar resumo:", error);
+    }
+  };
+
   const handleSummaryClick = (summary: Summary) => {
     setModalSummary(summary);
     setModalOpen(true);
@@ -181,7 +191,7 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
               <p className="text-gray-400">Visualize e gerencie todos os documentos processados</p>
             </div>
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
-              <SummaryList summaries={summaries} onSummaryClick={handleSummaryClick} onDelete={deleteSummaryFromFile} />
+              <SummaryList summaries={summaries} onSummaryClick={handleSummaryClick} />
             </div>
           </div>
         );
@@ -209,6 +219,9 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
         onClose={() => setModalOpen(false)}
         title={modalSummary?.title || ''}
         content={modalSummary ? `${modalSummary.analyse}` : ''}
+        onDelete={handleDeleteSummary}
+        id={modalSummary?.id}
+        apiKey={initialApiKey}
       />
 
       {/* Footer */}
