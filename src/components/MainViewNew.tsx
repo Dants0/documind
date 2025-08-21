@@ -22,10 +22,8 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSummary, setModalSummary] = useState<Summary | null>(null);
 
-  // Carrega a apiKey e os summaries do disco
   useEffect(() => {
     const loadData = async () => {
-      // 1. Carrega a API Key
       try {
         const settingsFileExists = await exists(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
         if (settingsFileExists) {
@@ -39,7 +37,6 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
         console.error('Erro ao carregar a chave de API:', error);
       }
 
-      // 2. Carrega os Summaries usando a função que você criou
       try {
         const loadedSummaries = await loadSummariesFromFile();
         setSummaries(loadedSummaries);
@@ -58,8 +55,8 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
   const handleDeleteSummary = async (id: number) => {
     try {
       const updatedSummaries = await deleteSummaryFromFile(id);
-      setSummaries(updatedSummaries); // Atualiza a lista exibida em tela
-      setModalOpen(false); // Fecha modal depois de deletar
+      setSummaries(updatedSummaries); 
+      setModalOpen(false);
     } catch (error) {
       console.error("Erro ao deletar resumo:", error);
     }
@@ -70,23 +67,19 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
     setModalOpen(true);
   };
 
-  // Função para adicionar um novo resumo à lista
   const handleAddSummary = (newSummary: Omit<Summary, 'id' | 'date'>) => {
     const summaryWithIdAndDate: Summary = {
       ...newSummary,
       id: Date.now(),
       date: new Date().toLocaleDateString('pt-BR'),
     };
-    // Atualiza o estado da lista de summaries com o novo resumo
     setSummaries(prev => [summaryWithIdAndDate, ...prev]);
   };
 
-  // Função para atualizar a API Key
   const handleApiKeyUpdate = (newApiKey: string | null) => {
     setApiKey(newApiKey);
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900">
@@ -224,7 +217,6 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
         apiKey={initialApiKey}
       />
 
-      {/* Footer */}
       <footer className="border-t border-gray-800 bg-gray-900/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">

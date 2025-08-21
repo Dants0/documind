@@ -11,7 +11,6 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
   const contentRef = useRef<HTMLDivElement>(null);
   const explanationRef = useRef<HTMLDivElement>(null);
 
-  // Estado para frase selecionada e explicação
   const [selectedSentence, setSelectedSentence] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
@@ -20,7 +19,6 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
     if (isOpen && contentRef.current) {
       contentRef.current.scrollTop = 0;
     }
-    // Limpa seleção ao fechar modal
     if (!isOpen) {
       setSelectedSentence(null);
       setExplanation(null);
@@ -28,14 +26,12 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
     }
   }, [isOpen]);
 
-  // Scroll automático para explicação ao selecionar frase
   useEffect(() => {
     if (selectedSentence && explanationRef.current) {
       explanationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [selectedSentence, explanation]);
 
-  // Exporta PDF na web
   const handleExportPdf = () => {
     const doc = new jsPDF();
     doc.setFontSize(12);
@@ -44,13 +40,11 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
     let y = 20;
 
     lines.forEach(line => {
-      // Detecta títulos em Markdown (**Título:**)
       const match = line.match(/^\*\*(.+?)\*\*\s*:?/);
       if (match) {
         doc.setFont("helvetica", "bold");
         doc.text(match[1], 10, y);
         doc.setFont("helvetica", "normal");
-        // Remove o título da linha para imprimir o resto, se houver
         const rest = line.replace(/^\*\*.+?\*\*\s*:?\s*/, '');
         if (rest) {
           y += 7;
@@ -60,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
             y += 7;
           });
         }
-        y += 7; // Espaço extra após título
+        y += 7; 
       } else if (line.trim() !== "") {
         // Texto normal
         const wrapped = doc.splitTextToSize(line, 180);
@@ -70,9 +64,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
         });
         y += 7;
       } else {
-        y += 7; // Linha em branco
+        y += 7; 
       }
-      // Quebra de página se necessário
       if (y > 280) {
         doc.addPage();
         y = 20;
@@ -83,25 +76,20 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
     doc.save(`${title.replace(/\.[^/.]+$/, "")}-resumo.pdf`);
   };
 
-  // Função para buscar explicação da IA (mock)
   const explainSentence = async (sentence: string) => {
     setLoadingExplanation(true);
     setExplanation(null);
     setSelectedSentence(sentence);
 
-    // Aqui você pode integrar com sua API/IA real
     const explanationAi: any = await explainSetenceWithOpenAi(sentence, apiKey)
     setExplanation(explanationAi.explain)
     setLoadingExplanation(false);
   };
 
-  // Customização do ReactMarkdown para frases clicáveis mantendo o negrito
   const MarkdownWithClickableSentences = ({ children }: { children: string }) => (
     <ReactMarkdown
       components={{
         p({ children }) {
-          // children pode conter elementos React (inclusive <strong>)
-          // Vamos montar um array de frases, preservando o negrito
           const elements: React.ReactNode[] = [];
           let buffer: React.ReactNode[] = [];
 
@@ -114,14 +102,12 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
 
           React.Children.forEach(children, (child) => {
             if (typeof child === 'string') {
-              // Split em frases
               const sentences = splitTextInSentences(child);
               sentences.forEach((sentence) => {
                 buffer.push(sentence);
                 flushBuffer();
               });
             } else if (React.isValidElement(child) && child.type === 'strong') {
-              // Se for <strong>, preserve o negrito
               const strongChildren = (child as React.ReactElement<any>).props.children;
               if (typeof strongChildren === 'string') {
                 const sentences = splitTextInSentences(strongChildren);
@@ -149,7 +135,6 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, o
             }
           });
 
-          // Renderiza cada frase/buffer como um span clicável
           return (
             <p>
               {elements.map((fragment, idx) => (

@@ -106,7 +106,6 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
         <p className="text-gray-400">Gerencie suas preferências e configurações da aplicação</p>
       </div>
 
-      {/* API Configuration */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
         <div className="flex items-center mb-4">
           <svg className="w-6 h-6 text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,7 +210,6 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
         )}
       </div>
 
-      {/* App Information */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
         <div className="flex items-center mb-4">
           <svg className="w-6 h-6 text-purple-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +259,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiKey, onApiKeyUpdate }) =>
         </div>
       </div>
 
-      {/* Support & Help */}
+      
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
         <div className="flex items-center mb-4">
           <svg className="w-6 h-6 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

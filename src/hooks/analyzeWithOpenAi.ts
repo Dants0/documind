@@ -1,6 +1,5 @@
 export const analyzeWithOpenAI = async (text: string, fileName: string, apiKey: string): Promise<{ preview: string; analyse: string }> => {
-  // Limita o texto se for muito longo (OpenAI tem limites de tokens)
-  const maxLength = 10000; // aproximadamente 3000 tokens
+  const maxLength = 10000;
   const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '\n\n[Texto truncado devido ao tamanho...]' : text;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {

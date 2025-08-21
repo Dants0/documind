@@ -3,7 +3,6 @@ import { InsightsProps } from '../interfaces/Insights';
 
 
 export const Insights: React.FC<InsightsProps> = ({ summaries }) => {
-  // Calcular estatísticas
   const totalDocuments = summaries.length;
   const documentsThisWeek = summaries.filter(summary => {
     const summaryDate = new Date(summary.date.split('/').reverse().join('-'));
@@ -12,7 +11,6 @@ export const Insights: React.FC<InsightsProps> = ({ summaries }) => {
     return summaryDate >= oneWeekAgo;
   }).length;
 
-  // Tipos de documento mais comum
   const documentTypes = summaries.reduce((acc, summary) => {
     const extension = summary.title.split('.').pop()?.toLowerCase() || 'unknown';
     acc[extension] = (acc[extension] || 0) + 1;
@@ -61,13 +59,11 @@ export const Insights: React.FC<InsightsProps> = ({ summaries }) => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="text-center">
         <h2 className="text-3xl font-bold text-white mb-2">Dashboard de Insights</h2>
         <p className="text-gray-400">Visualize estatísticas e tendências dos seus documentos analisados</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, index) => (
           <div key={index} className={`${stat.bgColor} rounded-xl p-6 border border-gray-700`}>
@@ -86,7 +82,6 @@ export const Insights: React.FC<InsightsProps> = ({ summaries }) => {
         ))}
       </div>
 
-      {/* Recent Activity */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
         <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
           <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +122,6 @@ export const Insights: React.FC<InsightsProps> = ({ summaries }) => {
         )}
       </div>
 
-      {/* Document Types Chart */}
       {Object.keys(documentTypes).length > 0 && (
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
           <h3 className="text-xl font-semibold text-white mb-4 flex items-center">

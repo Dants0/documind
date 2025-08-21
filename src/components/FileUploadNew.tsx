@@ -9,10 +9,8 @@ import { FileUploadProps } from '../interfaces/FileUpload';
 import { analyzeWithOpenAI } from '../hooks/analyzeWithOpenAi';
 
 
-// Configurar o worker do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
 
-// Ícone de Upload em SVG
 const UploadIcon = () => (
   <svg className="w-12 h-12 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-4-4V7a4 4 0 014-4h1.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H13a4 4 0 014 4v5m-5 4h5a4 4 0 004-4v-1.586a1 1 0 00-.293-.707l-1.414-1.414a1 1 0 00-.707-.293H10a4 4 0 00-4 4v1.586a1 1 0 00.293.707l1.414 1.414a1 1 0 00.707.293h.001z"></path>
@@ -20,10 +18,8 @@ const UploadIcon = () => (
 );
 
 
-// Constante para o nome do arquivo de dados
 const SUMMARIES_FILE_NAME = 'document_analysis_summaries.json';
 
-// Funções para gerenciar arquivos com Tauri
 export const getSummariesFilePath = async (): Promise<string> => {
   const appDataDirPath = await appDataDir();
   return await join(appDataDirPath, SUMMARIES_FILE_NAME);
@@ -73,7 +69,6 @@ export const addSummaryToFile = async (newSummary: Summary): Promise<Summary[]> 
   }
 };
 
-// Nova função para deletar um resumo
 export const deleteSummaryFromFile = async (id: number): Promise<Summary[]> => {
   try {
     const existingSummaries = await loadSummariesFromFile();
@@ -130,7 +125,6 @@ const extractTextFromPDF = async (
 
     let fullText = '';
 
-    // Extrai texto de todas as páginas
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       if (onProgress) {
         onProgress({ page: pageNum, total: pdf.numPages });
@@ -246,7 +240,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
 
       setProcessingStep('saving');
 
-      // Cria um novo objeto de resumo completo
       const newSummary: Summary = {
         id: Date.now(),
         title: file.name,
@@ -261,7 +254,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
       setFile(null);
 
       toast.success('Arquivo analisado com sucesso!');
-      goToAnalyzedTab(); // Troca para a aba de arquivos analisados
+      goToAnalyzedTab();
 
     } catch (err) {
       console.error('Erro na análise:', err);
