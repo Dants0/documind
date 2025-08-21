@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
 import { MainView } from './components/MainView';
 import { ApiKeySetup } from './components/ApyKeySetup';
+import { useShortcuts } from './hooks/useShortCuts';
 
 export default function App() {
+  useShortcuts();
+
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSetup, setShowSetup] = useState(false);

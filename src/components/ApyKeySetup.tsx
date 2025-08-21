@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { writeTextFile, readTextFile, BaseDirectory, exists, create } from '@tauri-apps/plugin-fs';
+// Este código é destinado a ser executado em um ambiente Tauri.
+// Ele não funcionará no ambiente de demonstração baseado na web.
+// Todas as funções agora são importadas do plugin unificado de fs.
+import { writeTextFile, readTextFile, BaseDirectory, exists, mkdir } from '@tauri-apps/plugin-fs';
 
 interface ApiKeySetupProps {
   onSubmit: (apiKey: string) => void;
@@ -11,61 +14,52 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Define o nome do arquivo de configurações no diretório de configuração do app
   const SETTINGS_FILE = 'settings.json';
+  const SETTINGS_PATH = 'settings'; // Diretório onde o settings.json será salvo
 
   // Função para garantir que o diretório e arquivo existam
-  const ensureSettingsFile = async () => {
+  const ensureSettingsDirectory = async () => {
     try {
-      // Verifica se o arquivo existe
-      const fileExists = await exists(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
-
-      if (!fileExists) {
-        console.log('Arquivo settings.json não existe, criando...');
-        // Cria o arquivo com configuração inicial
-        await writeTextFile(SETTINGS_FILE, JSON.stringify({}), {
-          baseDir: BaseDirectory.AppConfig
+      // Verifica se o diretório de configurações existe
+      const dirExists = await exists(SETTINGS_PATH, { baseDir: BaseDirectory.AppConfig });
+      if (!dirExists) {
+        console.log('Diretório de configurações não existe, criando...');
+        // Usa mkdir em vez de create para criar diretórios
+        await mkdir(SETTINGS_PATH, {
+          baseDir: BaseDirectory.AppConfig,
+          recursive: true // Garante que cria diretórios pais se necessário
         });
-        console.log('Arquivo settings.json criado com sucesso');
+        console.log('Diretório criado com sucesso.');
       }
     } catch (error) {
-      console.error('Erro ao garantir settings.json:', error);
-
-      // Tenta criar o diretório se não existir
-      try {
-        console.log('Tentando criar arquivo settings.json...');
-        await create(SETTINGS_FILE, {
-          baseDir: BaseDirectory.AppConfig
-        });
-
-        // Escreve o conteúdo inicial no arquivo
-        await writeTextFile(SETTINGS_FILE, JSON.stringify({}), {
-          baseDir: BaseDirectory.AppConfig
-        });
-        console.log('Arquivo settings.json criado com sucesso');
-      } catch (dirError) {
-        console.error('Erro ao criar arquivo:', dirError);
-      }
+      console.error('Erro ao garantir diretório de configurações:', error);
+      // Mesmo com o erro, o app pode tentar continuar
     }
   };
 
-  // Carrega a chave salva
+  // Carrega a chave salva ao iniciar o componente
   useEffect(() => {
     const loadApiKey = async () => {
       try {
-        await ensureSettingsFile();
+        await ensureSettingsDirectory();
 
-        const content = await readTextFile(SETTINGS_FILE, {
-          baseDir: BaseDirectory.AppConfig
-        });
+        // Verifica se o arquivo settings.json existe
+        const fileExists = await exists(`${SETTINGS_PATH}/${SETTINGS_FILE}`, { baseDir: BaseDirectory.AppConfig });
 
-        console.log('Conteúdo lido do arquivo:', content);
-
-        const data = JSON.parse(content);
-        if (data.apiKey && data.apiKey.trim()) {
-          setSavedApiKey(data.apiKey.trim());
-          console.log('Chave de API carregada com sucesso');
+        if (fileExists) {
+          const content = await readTextFile(`${SETTINGS_PATH}/${SETTINGS_FILE}`, {
+            baseDir: BaseDirectory.AppConfig
+          });
+          const data = JSON.parse(content);
+          if (data.apiKey && data.apiKey.trim()) {
+            setSavedApiKey(data.apiKey.trim());
+            console.log('Chave de API carregada com sucesso do arquivo');
+          } else {
+            console.log('Arquivo settings.json encontrado, mas sem chave de API');
+          }
         } else {
-          console.log('Nenhuma chave de API encontrada no arquivo');
+          console.log('Arquivo settings.json não encontrado');
         }
       } catch (error) {
         console.error('Erro ao carregar chave de API:', error);
@@ -77,10 +71,10 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
     loadApiKey();
   }, []);
 
-  // Auto-submit se já tem chave salva e não está editando
+  // Auto-envio se a chave já existe e não está em modo de edição
   useEffect(() => {
     if (savedApiKey && !isEditing && !isLoading) {
-      console.log('Auto-submit com chave existente');
+      console.log('Auto-enviando com chave existente');
       onSubmit(savedApiKey);
     }
   }, [savedApiKey, isEditing, isLoading, onSubmit]);
@@ -95,26 +89,25 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
     }
 
     try {
-      console.log('Salvando nova chave de API...');
-
+      console.log('Salvando nova chave de API no arquivo...');
+      await ensureSettingsDirectory();
       const settingsData = { apiKey: key };
 
+      // Salva o arquivo no diretório de configuração
       await writeTextFile(
-        SETTINGS_FILE,
+        `${SETTINGS_PATH}/${SETTINGS_FILE}`,
         JSON.stringify(settingsData, null, 2),
         { baseDir: BaseDirectory.AppConfig }
       );
 
       console.log('Chave de API salva com sucesso');
-
       setSavedApiKey(key);
       setIsEditing(false);
       onSubmit(key);
-
     } catch (error) {
-      alert('Erro ao salvar chave de API:'+ error);
-
-      // Mesmo com erro de salvamento, continua com a chave em memória
+      // Usa um alerta simples conforme solicitado
+      alert('Erro ao salvar chave de API: ' + error);
+      console.error('Erro ao salvar chave de API:', error);
       alert('Aviso: Não foi possível salvar a chave permanentemente, mas você pode continuar.');
       setSavedApiKey(key);
       onSubmit(key);
@@ -127,21 +120,23 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
   };
 
   const handleClear = async () => {
+    // Usa a confirmação nativa conforme solicitado
     if (!confirm('Tem certeza que deseja remover a chave de API salva?')) {
       return;
     }
 
     try {
-      await writeTextFile(SETTINGS_FILE, JSON.stringify({}), {
+      console.log('Removendo chave de API...');
+      await ensureSettingsDirectory();
+      // Salva um objeto vazio no arquivo para remover a chave
+      await writeTextFile(`${SETTINGS_PATH}/${SETTINGS_FILE}`, JSON.stringify({}), {
         baseDir: BaseDirectory.AppConfig
       });
 
       setSavedApiKey(null);
       setInputValue('');
       setIsEditing(true);
-
       console.log('Chave de API removida com sucesso');
-
     } catch (error) {
       console.error('Erro ao limpar chave de API:', error);
       alert('Erro ao remover a chave. Tente novamente.');
@@ -153,7 +148,7 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
     return `${key.slice(0, 4)}${'*'.repeat(Math.max(4, key.length - 8))}${key.slice(-4)}`;
   };
 
-  // Loading state
+  // Estado de carregamento
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900">
@@ -165,7 +160,7 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
     );
   }
 
-  // Confirmation screen (when key exists and not editing)
+  // Tela de confirmação (quando a chave existe e não está editando)
   if (savedApiKey && !isEditing) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900">
@@ -210,7 +205,7 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
     );
   }
 
-  // Form screen (new key or editing)
+  // Tela do formulário (nova chave ou edição)
   return (
     <div className="flex items-center justify-center h-screen bg-gray-900">
       <div className="p-8 bg-gray-800 rounded-xl w-full max-w-md">
@@ -262,3 +257,17 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onSubmit }) => {
     </div>
   );
 };
+
+// Componente principal App para demonstração
+export default function App() {
+  const handleApiKeySubmit = (key: string) => {
+    console.log("Chave de API recebida com sucesso:", key);
+    // Aqui você integraria a chave na lógica principal do seu app
+  };
+
+  return (
+    <div className="bg-gray-900 min-h-screen flex items-center justify-center font-sans">
+      <ApiKeySetup onSubmit={handleApiKeySubmit} />
+    </div>
+  );
+}
