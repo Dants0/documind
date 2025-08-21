@@ -54,7 +54,7 @@ A aplicação possui uma navegação limpa com tabs para diferentes seções:
 1. Clone o repositório:
 
 ```bash
-git clone https://github.com/seu-usuario/documind.git
+git clone https://github.com/dants0/documind.git
 cd documind
 ```
 
@@ -173,9 +173,9 @@ Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
 
 ## Contato
 
-Seu Nome - [@seu_twitter](https://twitter.com/seu_twitter) - email@exemplo.com
+Guilherme Dantas - [@LinkedIn](https://www.linkedin.com/in/guilherme-d-goes) - guilhermedantasgoes@gmail.com
 
-Link do Projeto: [https://github.com/seu-usuario/documind](https://github.com/seu-usuario/documind)
+Link do Projeto: [https://github.com/dants0/documind](https://github.com/dants0/documind)
 
 ---
 
