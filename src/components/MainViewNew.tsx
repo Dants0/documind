@@ -1,81 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
-// import { FileUpload } from './FileUpload';
 import { Summary, SummaryList } from './Summary';
 import { Navigation, TabType } from './Navigation';
 import { Settings } from './Settings';
 import { Insights } from './Insights';
-import { FileUpload } from './FileUploadNew';
-
-// Dados de exemplo para a lista de resumos
-const initialSummaries: Summary[] = [
-  {
-    id: 1,
-    title: 'Relatório Trimestral Q3.pdf Mock',
-    date: '18/08/2025',
-    preview: 'O relatório aponta um crescimento de 15% nas vendas, impulsionado pelo novo produto...',
-    analyse: "Análise detalhada do relatório trimestral..."
-  },
-  {
-    id: 2,
-    title: 'Contrato de Serviço - Empresa X.docx Mock',
-    date: '15/08/2025',
-    preview: 'As cláusulas principais incluem os termos de pagamento, confidencialidade e prazo de vigência...',
-    analyse: "Análise completa do contrato de serviço..."
-  },
-];
+import { FileUpload, loadSummariesFromFile } from './FileUploadNew'
 
 interface MainViewProps {
   initialApiKey?: string;
 }
 
-export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) => {
+export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
   const SETTINGS_FILE = 'settings.json';
-  const [summaries, setSummaries] = useState<Summary[]>(initialSummaries);
+
+  const [summaries, setSummaries] = useState<Summary[]>([]);
   const [apiKey, setApiKey] = useState<string | null>(initialApiKey || null);
-  const [isLoading, setIsLoading] = useState(!initialApiKey);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
 
-  // Carrega a apiKey do settings.json se não foi fornecida via props
+  // Carrega a apiKey e os summaries do disco
   useEffect(() => {
-    if (initialApiKey) {
-      setApiKey(initialApiKey);
-      setIsLoading(false);
-      return;
-    }
-
-    const loadApiKey = async () => {
+    const loadData = async () => {
+      // 1. Carrega a API Key
       try {
-        // Verifica se o arquivo existe
-        const fileExists = await exists(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
-
-        if (!fileExists) {
-          console.log('Arquivo settings.json não encontrado');
-          setIsLoading(false);
-          return;
-        }
-
-        const content = await readTextFile(SETTINGS_FILE, {
-          baseDir: BaseDirectory.AppConfig
-        });
-
-        console.log('Conteúdo do settings.json carregado:', content);
-
-        const data = JSON.parse(content);
-        if (data.apiKey && data.apiKey.trim()) {
-          setApiKey(data.apiKey.trim());
-          console.log('Chave de API carregada no MainView');
-        } else {
-          console.log('Nenhuma chave de API encontrada no arquivo');
+        const settingsFileExists = await exists(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
+        if (settingsFileExists) {
+          const content = await readTextFile(SETTINGS_FILE, { baseDir: BaseDirectory.AppConfig });
+          const data = JSON.parse(content);
+          if (data.apiKey && data.apiKey.trim()) {
+            setApiKey(data.apiKey.trim());
+          }
         }
       } catch (error) {
-        console.error('Erro ao carregar chave de API no MainView:', error);
+        console.error('Erro ao carregar a chave de API:', error);
+      }
+
+      // 2. Carrega os Summaries usando a função que você criou
+      try {
+        const loadedSummaries = await loadSummariesFromFile();
+        setSummaries(loadedSummaries);
+        console.log('Summaries carregados com sucesso.');
+      } catch (error) {
+        console.error('Erro ao carregar os summaries:', error);
+        setSummaries([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadApiKey();
+    loadData();
   }, [initialApiKey]);
 
   // Função para adicionar um novo resumo à lista
@@ -85,6 +58,7 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
       id: Date.now(),
       date: new Date().toLocaleDateString('pt-BR'),
     };
+    // Atualiza o estado da lista de summaries com o novo resumo
     setSummaries(prev => [summaryWithIdAndDate, ...prev]);
   };
 
@@ -114,13 +88,9 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
               <h2 className="text-3xl font-bold text-white mb-2">Novo Documento</h2>
               <p className="text-gray-400">Faça upload de um documento para gerar análise inteligente com IA</p>
             </div>
-
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
               {apiKey ? (
-                <FileUpload
-                  onAnalysisComplete={handleAddSummary}
-                  apiKey={apiKey}
-                />
+                <FileUpload onAnalysisComplete={handleAddSummary} apiKey={apiKey} />
               ) : (
                 <div className="text-center p-12">
                   <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -134,10 +104,7 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
                   <p className="text-gray-400 mb-6 max-w-md mx-auto">
                     Para usar a análise de documentos, você precisa configurar sua chave da OpenAI.
                   </p>
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
-                  >
+                  <button onClick={() => setActiveTab('settings')} className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -147,8 +114,6 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
                 </div>
               )}
             </div>
-
-            {/* Quick Stats */}
             {apiKey && summaries.length > 0 && (
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
@@ -162,7 +127,6 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
                     </svg>
                   </div>
                 </div>
-
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                   <div className="flex items-center justify-between">
                     <div>
@@ -181,7 +145,6 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
                     </svg>
                   </div>
                 </div>
-
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                   <div className="flex items-center justify-between">
                     <div>
@@ -197,7 +160,6 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
             )}
           </div>
         );
-
       case 'analyzed':
         return (
           <div className="max-w-6xl mx-auto">
@@ -205,19 +167,15 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
               <h2 className="text-3xl font-bold text-white mb-2">Arquivos Analisados</h2>
               <p className="text-gray-400">Visualize e gerencie todos os documentos processados</p>
             </div>
-
             <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
               <SummaryList summaries={summaries} />
             </div>
           </div>
         );
-
       case 'insights':
         return <Insights summaries={summaries} />;
-
       case 'settings':
         return <Settings apiKey={apiKey} onApiKeyUpdate={handleApiKeyUpdate} />;
-
       default:
         return null;
     }
@@ -230,12 +188,9 @@ export const MainViewDeprecated: React.FC<MainViewProps> = ({ initialApiKey }) =
         onTabChange={setActiveTab}
         hasApiKey={!!apiKey}
       />
-
       <div className="container mx-auto p-6 md:p-8 pb-12">
         {renderTabContent()}
       </div>
-
-      {/* Footer */}
       <footer className="border-t border-gray-800 bg-gray-900/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
-import { MainView } from './components/MainView';
+import { MainView } from './components/MainViewNew';
 import { ApiKeySetup } from './components/ApyKeySetup';
 import { useShortcuts } from './hooks/useShortCuts';
 

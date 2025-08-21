@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Summary } from './Summary';
 import * as pdfjsLib from 'pdfjs-dist';
-import { writeTextFile, readTextFile, exists } from '@tauri-apps/plugin-fs';
+import { writeTextFile, readTextFile, exists, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { appDataDir, join } from '@tauri-apps/api/path';
 
 // Configurar o worker do PDF.js
@@ -24,16 +24,16 @@ interface FileUploadProps {
 const SUMMARIES_FILE_NAME = 'document_analysis_summaries.json';
 
 // Funções para gerenciar arquivos com Tauri
-const getSummariesFilePath = async (): Promise<string> => {
+export const getSummariesFilePath = async (): Promise<string> => {
   const appDataDirPath = await appDataDir();
   return await join(appDataDirPath, SUMMARIES_FILE_NAME);
 };
 
-const saveSummariesToFile = async (summaries: Summary[]): Promise<void> => {
+export const saveSummariesToFile = async (summaries: Summary[]): Promise<void> => {
   try {
     const filePath = await getSummariesFilePath();
     const jsonData = JSON.stringify(summaries, null, 2);
-    await writeTextFile(filePath, jsonData);
+    await writeTextFile(filePath, jsonData, { baseDir: BaseDirectory.AppConfig });
     console.log('Análises salvas no arquivo:', filePath);
   } catch (error) {
     console.error('Erro ao salvar análises no arquivo:', error);
@@ -41,7 +41,7 @@ const saveSummariesToFile = async (summaries: Summary[]): Promise<void> => {
   }
 };
 
-const loadSummariesFromFile = async (): Promise<Summary[]> => {
+export const loadSummariesFromFile = async (): Promise<Summary[]> => {
   try {
     const filePath = await getSummariesFilePath();
     const fileExists = await exists(filePath);
@@ -57,12 +57,11 @@ const loadSummariesFromFile = async (): Promise<Summary[]> => {
     return summaries;
   } catch (error) {
     console.error('Erro ao carregar análises do arquivo:', error);
-    // Se houver erro, retorna array vazio ao invés de quebrar a aplicação
     return [];
   }
 };
 
-const addSummaryToFile = async (newSummary: Summary): Promise<Summary[]> => {
+export const addSummaryToFile = async (newSummary: Summary): Promise<Summary[]> => {
   try {
     const existingSummaries = await loadSummariesFromFile();
     const updatedSummaries = [newSummary, ...existingSummaries];
@@ -74,7 +73,6 @@ const addSummaryToFile = async (newSummary: Summary): Promise<Summary[]> => {
   }
 };
 
-// Função para extrair texto de PDF usando pdfjs-dist
 const extractTextFromPDF = async (
   file: File,
   onProgress?: (progress: { page: number; total: number }) => void
@@ -118,7 +116,6 @@ const extractTextFromPDF = async (
   }
 };
 
-// Função para extrair texto de diferentes tipos de arquivo
 const extractTextFromFile = async (file: File): Promise<string> => {
   const fileType = file.type;
   const fileName = file.name.toLowerCase();
@@ -146,9 +143,8 @@ const extractTextFromFile = async (file: File): Promise<string> => {
   else {
     throw new Error(`Tipo de arquivo não suportado: ${fileType || 'desconhecido'}`);
   }
-};
+}
 
-// Função para fazer a análise com OpenAI
 const analyzeWithOpenAI = async (text: string, fileName: string, apiKey: string): Promise<{ preview: string; analyse: string }> => {
   // Limita o texto se for muito longo (OpenAI tem limites de tokens)
   const maxLength = 10000; // aproximadamente 3000 tokens
@@ -203,7 +199,8 @@ const analyzeWithOpenAI = async (text: string, fileName: string, apiKey: string)
   }
 };
 
-export const FileUploadDeprecated: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiKey }) => {
+
+export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiKey }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -242,36 +239,25 @@ export const FileUploadDeprecated: React.FC<FileUploadProps> = ({ onAnalysisComp
     try {
       console.log(`Iniciando análise do arquivo: ${file.name}`);
 
-      // Extrai texto do arquivo
       let text = '';
-
       if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
         setProcessingStep('extracting');
-        console.log('Extraindo texto do PDF...');
         text = await extractTextFromPDF(file, setProgress);
       } else {
         setProcessingStep('extracting');
-        console.log('Extraindo texto do arquivo...');
         text = await extractTextFromFile(file);
       }
 
-      console.log(`Texto extraído: ${text.length} caracteres`);
-
       setProcessingStep('analyzing');
       setProgress(null);
-      console.log('Enviando para OpenAI...');
 
-      // Faz a análise com OpenAI
       const { preview, analyse } = await analyzeWithOpenAI(text, file.name, apiKey);
 
-      console.log("Análise concluída!");
-
       setProcessingStep('saving');
-      console.log('Salvando análise no disco...');
 
       // Cria um novo objeto de resumo completo
       const newSummary: Summary = {
-        id: Date.now(), // ID único baseado no timestamp
+        id: Date.now(),
         title: file.name,
         date: new Date().toLocaleDateString('pt-BR'),
         preview: preview,
@@ -320,24 +306,11 @@ export const FileUploadDeprecated: React.FC<FileUploadProps> = ({ onAnalysisComp
 
   return (
     <div className="flex flex-col gap-6">
-      <div
-        {...getRootProps()}
-        className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors duration-200 ${isDragActive
-          ? 'border-blue-500 bg-gray-700'
-          : 'border-gray-600 hover:border-blue-600'
-          }`}
-      >
+      <div {...getRootProps()} className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors duration-200 ${isDragActive ? 'border-blue-500 bg-gray-700' : 'border-gray-600 hover:border-blue-600'}`}>
         <input {...getInputProps()} />
         <UploadIcon />
-        <p className="mt-4 text-gray-400">
-          {isDragActive
-            ? "Solte o arquivo aqui..."
-            : "Arraste e solte um documento aqui, ou clique para selecionar."
-          }
-        </p>
-        <p className="text-xs text-gray-500 mt-2">
-          Suporta: TXT, PDF (extração de texto), JSON, MD, CSV, DOC, DOCX
-        </p>
+        <p className="mt-4 text-gray-400">{isDragActive ? "Solte o arquivo aqui..." : "Arraste e solte um documento aqui, ou clique para selecionar."}</p>
+        <p className="text-xs text-gray-500 mt-2">Suporta: TXT, PDF (extração de texto), JSON, MD, CSV, DOC, DOCX</p>
       </div>
 
       {file && (
@@ -346,31 +319,22 @@ export const FileUploadDeprecated: React.FC<FileUploadProps> = ({ onAnalysisComp
           <p className="text-sm text-gray-300">{file.name}</p>
           <p className="text-xs text-gray-500">Tipo: {file.type || 'Desconhecido'}</p>
           <p className="text-xs text-gray-500">Tamanho: {(file.size / 1024).toFixed(2)} KB</p>
-          {file.type === 'application/pdf' && (
-            <p className="text-xs text-blue-400 mt-1">✨ Extração de texto PDF habilitada</p>
-          )}
+          {file.type === 'application/pdf' && (<p className="text-xs text-blue-400 mt-1">✨ Extração de texto PDF habilitada</p>)}
         </div>
       )}
 
       {progress && (
         <div className="p-4 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
-          <p className="text-blue-300 text-sm mb-2">
-            Processando PDF: Página {progress.page} de {progress.total}
-          </p>
+          <p className="text-blue-300 text-sm mb-2">Processando PDF: Página {progress.page} de {progress.total}</p>
           <div className="w-full bg-gray-700 rounded-full h-2">
-            <div
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(progress.page / progress.total) * 100}%` }}
-            ></div>
+            <div className="bg-blue-500 h-2 rounded-full transition-all duration-300" style={{ width: `${(progress.page / progress.total) * 100}%` }}></div>
           </div>
         </div>
       )}
 
       {error && (
         <div className="p-4 bg-red-900 bg-opacity-50 border border-red-500 rounded-lg">
-          <p className="text-red-300 text-sm">
-            <strong>Erro:</strong> {error}
-          </p>
+          <p className="text-red-300 text-sm"><strong>Erro:</strong> {error}</p>
         </div>
       )}
 
@@ -395,6 +359,3 @@ export const FileUploadDeprecated: React.FC<FileUploadProps> = ({ onAnalysisComp
     </div>
   );
 };
-
-// Exporta as funções utilitárias para uso em outros componentes
-export { loadSummariesFromFile, saveSummariesToFile };
