@@ -3,12 +3,12 @@ import { readTextFile, BaseDirectory, exists } from '@tauri-apps/plugin-fs';
 import { SummaryList } from './Summary';
 import { Navigation } from './Navigation';
 import { Settings } from './Settings';
-import { Insights } from './Insights';
 import { Modal } from './Modal';
 import { MainViewProps } from '../interfaces/MainView';
 import { TabType } from '../interfaces/Navigation';
 import { Summary } from '../interfaces/Summary';
 import { loadSummariesFromFile, FileUpload, deleteSummaryFromFile } from './FileUploadNew';
+import { InsightsContainer } from './InsightsContainer';
 
 
 
@@ -189,7 +189,7 @@ export const MainView: React.FC<MainViewProps> = ({ initialApiKey }) => {
           </div>
         );
       case 'insights':
-        return <Insights summaries={summaries} />;
+        return <InsightsContainer summaries={summaries} />;
       case 'settings':
         return <Settings apiKey={apiKey} onApiKeyUpdate={handleApiKeyUpdate} />;
       default:
