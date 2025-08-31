@@ -7,6 +7,7 @@ import { writeTextFile, exists, readTextFile, mkdir } from '@tauri-apps/plugin-f
 import { Summary } from '../interfaces/Summary';
 import { FileUploadProps } from '../interfaces/FileUpload';
 import { analyzeWithOpenAI } from '../hooks/analyzeWithOpenAi';
+import { analyzeContractWithOpenAI } from '../hooks/analyzeContractWithOpenAi';
 
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
@@ -191,6 +192,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ page: number; total: number } | null>(null);
   const [processingStep, setProcessingStep] = useState<'extracting' | 'analyzing' | 'saving' | null>(null);
+  const [isContract, setIsContract] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -236,7 +238,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
       setProcessingStep('analyzing');
       setProgress(null);
 
-      const { preview, analyse } = await analyzeWithOpenAI(text, file.name, apiKey);
+      let preview, analyse;
+      if (isContract) {
+        ({ preview, analyse } = await analyzeContractWithOpenAI(text, file.name, apiKey));
+      } else {
+        ({ preview, analyse } = await analyzeWithOpenAI(text, file.name, apiKey));
+      }
 
       setProcessingStep('saving');
 
@@ -245,7 +252,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
         title: file.name,
         date: new Date().toLocaleDateString('pt-BR'),
         preview: preview,
-        analyse: analyse
+        analyse: analyse,
+        // Adiciona um campo para diferenciar contratos
+        ...(isContract ? { type: 'contract' } : {})
       };
 
       await addSummaryToFile(newSummary);
@@ -253,7 +262,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
       onAnalysisComplete(newSummary);
       setFile(null);
 
-      toast.success('Arquivo analisado com sucesso!');
+      toast.success(isContract ? 'Contrato analisado com sucesso!' : 'Arquivo analisado com sucesso!');
       goToAnalyzedTab();
 
     } catch (err) {
@@ -292,6 +301,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
         <p className="text-xs text-gray-500 mt-2">Suporta: TXT, PDF (extração de texto), JSON, MD, CSV, DOC, DOCX</p>
       </div>
 
+      <div className="flex items-center gap-3 mt-2">
+        <input
+          type="checkbox"
+          id="isContract"
+          checked={isContract}
+          onChange={e => setIsContract(e.target.checked)}
+          className="form-checkbox h-5 w-5 text-blue-600"
+        />
+        <label htmlFor="isContract" className="text-gray-300 cursor-pointer select-none">
+          Analisar como contrato (usa prompt jurídico especializado)
+        </label>
+      </div>
+
       {file && (
         <div className="text-center p-4 bg-gray-700 rounded-lg">
           <p className="font-semibold">Arquivo selecionado:</p>
@@ -327,7 +349,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
             <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
             {getProcessingText()}
           </div>
-        ) : 'Iniciar Análise'}
+        ) : (isContract ? 'Analisar Contrato' : 'Iniciar Análise')}
       </button>
 
       {!apiKey && (

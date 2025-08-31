@@ -4,6 +4,7 @@ export interface Summary {
   date: string;
   preview: string;
   analyse: string;
+  type?: 'contract' | 'document';
 
   keywords?: string[];
   themes?: string[];
