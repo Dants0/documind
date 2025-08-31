@@ -782,8 +782,9 @@ dependencies = [
 
 [[package]]
 name = "documind"
-version = "0.1.0"
+version = "2.1.1"
 dependencies = [
+ "regex",
  "serde",
  "serde_json",
  "tauri",

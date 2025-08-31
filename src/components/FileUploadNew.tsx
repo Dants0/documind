@@ -3,13 +3,15 @@ import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
 import { toast } from 'react-hot-toast';
 import { appDataDir, join } from '@tauri-apps/api/path';
-import { writeTextFile, BaseDirectory, exists, readTextFile, mkdir } from '@tauri-apps/plugin-fs';
+import { writeTextFile, exists, readTextFile, mkdir } from '@tauri-apps/plugin-fs';
 import { Summary } from '../interfaces/Summary';
+import { FileUploadProps } from '../interfaces/FileUpload';
+import { analyzeWithOpenAI } from '../hooks/analyzeWithOpenAi';
+import { analyzeContractWithOpenAI } from '../hooks/analyzeContractWithOpenAi';
 
-// Configurar o worker do PDF.js
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
 
-// Ícone de Upload em SVG
 const UploadIcon = () => (
   <svg className="w-12 h-12 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-4-4V7a4 4 0 014-4h1.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H13a4 4 0 014 4v5m-5 4h5a4 4 0 004-4v-1.586a1 1 0 00-.293-.707l-1.414-1.414a1 1 0 00-.707-.293H10a4 4 0 00-4 4v1.586a1 1 0 00.293.707l1.414 1.414a1 1 0 00.707.293h.001z"></path>
@@ -17,16 +19,8 @@ const UploadIcon = () => (
 );
 
 
-interface FileUploadProps {
-  onAnalysisComplete: (newSummary: Omit<Summary, 'id' | 'date'>) => void;
-  apiKey: string;
-  goToAnalyzedTab: () => void;
-}
-
-// Constante para o nome do arquivo de dados
 const SUMMARIES_FILE_NAME = 'document_analysis_summaries.json';
 
-// Funções para gerenciar arquivos com Tauri
 export const getSummariesFilePath = async (): Promise<string> => {
   const appDataDirPath = await appDataDir();
   return await join(appDataDirPath, SUMMARIES_FILE_NAME);
@@ -36,7 +30,7 @@ export const saveSummariesToFile = async (summaries: Summary[]): Promise<void> =
   try {
     const filePath = await getSummariesFilePath();
     const jsonData = JSON.stringify(summaries, null, 2);
-    await writeTextFile(filePath, jsonData, { baseDir: BaseDirectory.AppConfig });
+    await writeTextFile(filePath, jsonData);
     console.log('Análises salvas no arquivo:', filePath);
   } catch (error) {
     console.error('Erro ao salvar análises no arquivo:', error);
@@ -76,11 +70,11 @@ export const addSummaryToFile = async (newSummary: Summary): Promise<Summary[]> 
   }
 };
 
-// Nova função para deletar um resumo
 export const deleteSummaryFromFile = async (id: number): Promise<Summary[]> => {
   try {
     const existingSummaries = await loadSummariesFromFile();
     const updatedSummaries = existingSummaries.filter(summary => summary.id !== id);
+    console.log(updatedSummaries)
     await saveSummariesToFile(updatedSummaries);
     console.log(`Resumo com ID ${id} excluído com sucesso.`);
     return updatedSummaries;
@@ -93,13 +87,13 @@ export const deleteSummaryFromFile = async (id: number): Promise<Summary[]> => {
 export const downloadSummaryAsFile = async (summary: Summary): Promise<void> => {
   try {
     const appDataPath = await appDataDir();
-    const appFolderName = 'DocuMind';
+    const appFolderName = 'IntelliDocs';
     const appFolderPath = await join(appDataPath, appFolderName);
 
     try {
       await mkdir(appFolderPath);
     } catch (error) {
-      console.log('A pasta DocuMind já existe.');
+      console.log('A pasta IntelliDocs já existe.');
     }
 
     const cleanTitle = summary.title.replace(/[\\/:*?"<>|]/g, '');
@@ -132,7 +126,6 @@ const extractTextFromPDF = async (
 
     let fullText = '';
 
-    // Extrai texto de todas as páginas
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       if (onProgress) {
         onProgress({ page: pageNum, total: pdf.numPages });
@@ -192,51 +185,6 @@ const extractTextFromFile = async (file: File): Promise<string> => {
   }
 }
 
-const analyzeWithOpenAI = async (text: string, fileName: string, apiKey: string): Promise<{ preview: string; analyse: string }> => {
-  // Limita o texto se for muito longo (OpenAI tem limites de tokens)
-  const maxLength = 10000; // aproximadamente 3000 tokens
-  const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '\n\n[Texto truncado devido ao tamanho...]' : text;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'Você é um assistente especializado em análise de documentos. Você deve fornecer duas coisas: 1) Um resumo breve (preview) de 2-3 linhas, 2) Uma análise detalhada do documento cobrindo os pontos principais, insights e conclusões.'
-        },
-        {
-          role: 'user',
-          content: `Analise o seguinte documento "${fileName}":\n\n${truncatedText}\n\nResponda SEMPRE em texto direto, nunca em JSON. Forneça um resumo breve (máx. 2 linhas) e uma análise detalhada, ambos em texto corrido, claros, objetivos e sucintos. Use Markdown para destacar títulos e tópicos, se necessário.`
-        }
-      ],
-      max_tokens: 2000,
-      temperature: 0.7,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`Erro na API OpenAI: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error('Resposta vazia da OpenAI');
-  }
-
-  return {
-    preview: '',
-    analyse: content
-  };
-};
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiKey, goToAnalyzedTab }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -244,6 +192,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ page: number; total: number } | null>(null);
   const [processingStep, setProcessingStep] = useState<'extracting' | 'analyzing' | 'saving' | null>(null);
+  const [isContract, setIsContract] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -289,34 +238,42 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
       setProcessingStep('analyzing');
       setProgress(null);
 
-      const { preview, analyse } = await analyzeWithOpenAI(text, file.name, apiKey);
+      let preview, analyse;
+      if (isContract) {
+        ({ preview, analyse } = await analyzeContractWithOpenAI(text, file.name, apiKey));
+      } else {
+        ({ preview, analyse } = await analyzeWithOpenAI(text, file.name, apiKey));
+      }
 
       setProcessingStep('saving');
 
-      // Cria um novo objeto de resumo completo
       const newSummary: Summary = {
         id: Date.now(),
         title: file.name,
         date: new Date().toLocaleDateString('pt-BR'),
         preview: preview,
-        analyse: analyse
+        analyse: analyse,
+        // Adiciona um campo para diferenciar contratos
+        ...(isContract ? { type: 'contract' } : {})
       };
 
-     onAnalysisComplete(newSummary);
-  setFile(null);
+      await addSummaryToFile(newSummary);
 
-  toast.success('Arquivo analisado com sucesso!');
-  goToAnalyzedTab(); // Troca para a aba de arquivos analisados
+      onAnalysisComplete(newSummary);
+      setFile(null);
 
-} catch (err) {
-  console.error('Erro na análise:', err);
-  setError(err instanceof Error ? err.message : 'Erro desconhecido na análise');
-  toast.error('Erro ao analisar o arquivo!');
-} finally {
-  setIsProcessing(false);
-  setProcessingStep(null);
-  setProgress(null);
-}
+      toast.success(isContract ? 'Contrato analisado com sucesso!' : 'Arquivo analisado com sucesso!');
+      goToAnalyzedTab();
+
+    } catch (err) {
+      console.error('Erro na análise:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido na análise');
+      toast.error('Erro ao analisar o arquivo!');
+    } finally {
+      setIsProcessing(false);
+      setProcessingStep(null);
+      setProgress(null);
+    }
   };
 
   const getProcessingText = () => {
@@ -342,6 +299,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
         <UploadIcon />
         <p className="mt-4 text-gray-400">{isDragActive ? "Solte o arquivo aqui..." : "Arraste e solte um documento aqui, ou clique para selecionar."}</p>
         <p className="text-xs text-gray-500 mt-2">Suporta: TXT, PDF (extração de texto), JSON, MD, CSV, DOC, DOCX</p>
+      </div>
+
+      <div className="flex items-center gap-3 mt-2">
+        <input
+          type="checkbox"
+          id="isContract"
+          checked={isContract}
+          onChange={e => setIsContract(e.target.checked)}
+          className="form-checkbox h-5 w-5 text-blue-600"
+        />
+        <label htmlFor="isContract" className="text-gray-300 cursor-pointer select-none">
+          Analisar como contrato (usa prompt jurídico especializado)
+        </label>
       </div>
 
       {file && (
@@ -379,7 +349,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
             <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
             {getProcessingText()}
           </div>
-        ) : 'Iniciar Análise'}
+        ) : (isContract ? 'Analisar Contrato' : 'Iniciar Análise')}
       </button>
 
       {!apiKey && (
@@ -387,7 +357,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onAnalysisComplete, apiK
           ⚠️ Chave de API não configurada. Configure sua chave OpenAI para usar a análise.
         </p>
       )}
-      
+
     </div>
   );
 };

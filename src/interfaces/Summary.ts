@@ -4,4 +4,13 @@ export interface Summary {
   date: string;
   preview: string;
   analyse: string;
+  type?: 'contract' | 'document';
+
+  keywords?: string[];
+  themes?: string[];
+  language?: string;
+  complexityScore?: number;
+  readabilityScore?: number;
+  wordCount?: number;
+  sentimentScore?: number; 
 }

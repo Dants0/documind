@@ -1,6 +1,6 @@
 {
-  "productName": "DocuMind",
-  "version": "0.1.0",
+  "productName": "IntelliDocs",
+  "version": "2.1.1",
   "identifier": "com.documind.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "DocuMind - Analisador de Documentos",
+        "title": "IntelliDocs - Analisador de Documentos",
         "width": 1200,
         "height": 800,
         "resizable": true,

@@ -1,9 +1,37 @@
 use tauri::Emitter;
 
+mod semantic_analysis;
+
+use semantic_analysis::{SemanticAnalyzer, SemanticData};
+
+#[tauri::command]
+async fn analyze_document_semantics(content: String) -> Result<SemanticData, String> {
+    let analyzer = SemanticAnalyzer::new();
+    let analysis = analyzer.analyze_text(&content);
+    Ok(analysis)
+}
+
+#[tauri::command]
+async fn batch_analyze_semantics(documents: Vec<String>) -> Result<Vec<SemanticData>, String> {
+    let analyzer = SemanticAnalyzer::new();
+    let mut results = Vec::new();
+
+    for content in documents {
+        let analysis = analyzer.analyze_text(&content);
+        results.push(analysis);
+    }
+
+    Ok(results)
+}
+
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_fs::init()) // Já estava correto
-        .plugin(tauri_plugin_store::Builder::default().build()) // <-- Novo: Plugin para armazenamento de dados
+        .invoke_handler(tauri::generate_handler![
+            analyze_document_semantics,
+            batch_analyze_semantics
+        ])
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .setup(|app| {
             #[cfg(desktop)]
             {
@@ -28,7 +56,6 @@ pub fn run() {
                 )?;
             }
 
-            println!("Aplicação Tauri iniciada com sucesso!");
             Ok(())
         })
         .run(tauri::generate_context!())

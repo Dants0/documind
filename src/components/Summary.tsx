@@ -1,5 +1,5 @@
 import React from 'react';
-import { SummaryListProps } from './SummaryList';
+import { SummaryListProps } from '../interfaces/SummaryList';
 
 
 export const SummaryList: React.FC<SummaryListProps> = ({ summaries, onSummaryClick }) => (
